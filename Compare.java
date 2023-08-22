@@ -1,26 +1,27 @@
-package programs.mapper;
-
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.lang.reflect.Field;
 import java.util.*;
 
-public class Compare {
+public class Main {
     public static void main(String[] args) {
-        compareFields(SeRequest.class, AdRequest.class);
+        compareFields(fields.class, Fields1.class);
     }
 
     public static void compareFields(Class<?> class1, Class<?> class2) {
         List<Field> fieldsOfClass1 = FieldUtils.getAllFieldsList(class1);
         List<Field> fieldsOfClass2 = FieldUtils.getAllFieldsList(class2);
 
-        SortedMap<String, Object> classOne = new TreeMap<>();
-        SortedMap<String, Object> classTwo = new TreeMap<>();
-        fieldsOfClass1.forEach(field -> classOne.put(field.getName(), field.getType().getSimpleName()));
-        fieldsOfClass2.forEach(field -> classTwo.put(field.getName(), field.getType().getSimpleName()));
-        System.out.println(classOne);
-        System.out.println(classTwo);
+        Map<String, Object> classOne = new HashMap<>();
+        Map<String, Object> classTwo = new HashMap<>();
 
+        for (Field field : fieldsOfClass1) {
+            classOne.put(field.getName(), field.getType().getSimpleName());
+        }
+
+        for (Field field : fieldsOfClass2) {
+            classTwo.put(field.getName(), field.getType().getSimpleName());
+        }
 
         int maxFieldNameLength = Math.max(getMaxLength(classOne.keySet()), getMaxLength(classTwo.keySet()));
         int maxClass1TypeLength = Math.max(getMaxLength(classOne.values()), "Class1 Data Type".length());
@@ -29,7 +30,7 @@ public class Compare {
         System.out.println(String.format("%-" + maxClass1TypeLength + "s  %-" + maxFieldNameLength + "s  %-" + maxClass2TypeLength + "s",
                 "Class1 Data Type", "Field Name", "Class2 Data Type"));
         System.out.println(String.format("%-" + maxClass1TypeLength + "s  %-" + maxFieldNameLength + "s  %-" + maxClass2TypeLength + "s",
-                "=".repeat(maxClass1TypeLength), "=".repeat(maxFieldNameLength), "=".repeat(maxClass2TypeLength)));
+                repeat("=", maxClass1TypeLength), repeat("=", maxFieldNameLength), repeat("=", maxClass2TypeLength)));
 
         for (String fieldName : classOne.keySet()) {
             String class1DataType = classOne.get(fieldName).toString();
@@ -48,11 +49,21 @@ public class Compare {
     }
 
     private static int getMaxLength(Collection<?> values) {
-        return values.stream()
-                .map(Object::toString)
-                .mapToInt(String::length)
-                .max()
-                .orElse(0);
+        int maxLength = 0;
+        for (Object value : values) {
+            int length = value.toString().length();
+            if (length > maxLength) {
+                maxLength = length;
+            }
+        }
+        return maxLength;
     }
 
+    private static String repeat(String str, int times) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < times; i++) {
+            result.append(str);
+        }
+        return result.toString();
+    }
 }
