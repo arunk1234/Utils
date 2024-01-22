@@ -1,0 +1,41 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '2.7.12'
+    id 'io.spring.dependency-management' version '1.1.4'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = '17'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+
+    // Exclude JUnit Jupiter (JUnit 5) dependencies from spring-boot-starter-test
+    testImplementation ('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.jupiter', module: 'junit-jupiter-api'
+        exclude group: 'org.junit.jupiter', module: 'junit-jupiter-engine'
+        exclude group: 'org.junit.jupiter', module: 'junit-jupiter-params'
+    }
+
+    // Add JUnit 4 dependency
+    testImplementation 'junit:junit:4.13.1'
+
+    // Mockito for mocking in tests
+//    testImplementation 'org.mockito:mockito-core:3.4.0'  // or a newer version
+
+    testImplementation 'org.mockito:mockito-inline:3.4.0'  // or a newer version
+
+
+}
+
+test {
+    useJUnit() // Use JUnit 4
+}
