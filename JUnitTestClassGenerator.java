@@ -3,6 +3,10 @@ package com.example.junit.service;
 import com.example.junit.model.LeprechaunFieldName;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
@@ -14,12 +18,25 @@ public class JUnitTestClassGenerator {
 
         appendPackageAndImports(testClassCode, clazz);
         appendLeprechaunFields(testClassCode, clazz);
-        appendPrivateVariables(testClassCode, clazz);
 
-        testClassCode.append("\n    // Test methods and logic go here\n")
-                .append("}\n");
+        testClassCode.append("\n    // Test methods and logic go here\n").append("}\n");
 
-        System.out.println(testClassCode.toString());
+        String outputFolderPath = "C:\\Users\\Arun\\Downloads\\New folder\\New folder\\junit\\src\\test\\java\\com\\example\\junit\\"; // Replace with your folder path
+        String fileName = clazz.getSimpleName() + "Test.java";
+        writeFile(outputFolderPath, fileName, testClassCode.toString());
+    }
+    private static void writeFile(String folderPath, String fileName, String content) {
+        File directory = new File(folderPath);
+        if (!directory.exists()) {
+            directory.mkdirs();
+        }
+
+        File file = new File(directory, fileName);
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+            writer.write(content);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void appendPackageAndImports(StringBuilder builder, Class<?> clazz) {
