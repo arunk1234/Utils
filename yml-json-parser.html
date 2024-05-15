@@ -1,28 +1,164 @@
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    k8s-app: metrics-server
-  name: metrics-server
-  namespace: kube-system
---- #This is a seperator between profiles
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    k8s-app: metrics-server
-    rbac.authorization.k8s.io/aggregate-to-admin: "true"
-    rbac.authorization.k8s.io/aggregate-to-edit: "true"
-    rbac.authorization.k8s.io/aggregate-to-view: "true"
-  name: system:aggregated-metrics-reader
-rules:
-- apiGroups:
-  - metrics.k8s.io
-  resources:
-  - pods
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
----
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive YAML/JSON Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <style>
+        body, html { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        .toolbar { padding: 5px; background-color: #f4f4f4; border-bottom: 2px solid #ccc; display: flex; justify-content: space-between; }
+        .toolbar button, .toolbar select { margin-right: 10px; }
+        .container { display: flex; height: calc(100vh - 40px); }
+        #inputArea, #jsoneditor { height: 100%; padding: 5px; box-sizing: border-box; }
+        #inputArea { border-right: 2px solid #ccc; resize: none; }
+        .resizer { width: 10px; cursor: ew-resize; background-color: #f4f4f4; border-right: 2px solid #ccc; }
+        .CodeMirror { height: 100%; }
+    </style>
+</head>
+<body>
+<div class="toolbar">
+    <div>
+        <button id="loadFileBtn">Load File</button>
+        <input type="file" id="fileInput" style="display: none;">
+        <button id="saveFileBtn">Save File</button>
+    </div>
+    <div>
+        <select id="modeSelector">
+            <option value="yaml">YAML</option>
+            <option value="json">JSON</option>
+        </select>
+    </div>
+</div>
+<div class="container">
+    <div id="inputArea" style="width: 50%;">
+        <textarea id="yaml-json-input" placeholder="Paste your YAML or JSON here..."></textarea>
+    </div>
+    <div class="resizer" id="resizer"></div>
+    <div id="jsoneditor" style="width: 50%;"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script>
+    const inputArea = document.getElementById('yaml-json-input');
+    const modeSelector = document.getElementById('modeSelector');
+
+    const editor = CodeMirror.fromTextArea(inputArea, {
+        mode: modeSelector.value === 'yaml' ? 'yaml' : {name: 'javascript', json: true},
+        theme: 'material-darker',
+        lineNumbers: true
+    });
+
+    modeSelector.addEventListener('change', function() {
+        editor.setOption('mode', this.value === 'yaml' ? 'yaml' : {name: 'javascript', json: true});
+    });
+
+    editor.on('change', function () {
+        const input = editor.getValue().trim();
+        let json = [];
+        let isValid = true;
+
+        try {
+            if (modeSelector.value === 'json') {
+                json.push(JSON.parse(input));
+            } else {
+                const docs = input.split(/^---/m);
+                docs.forEach((doc, index) => {
+                    if (doc.trim()) {
+                        const parsed = jsyaml.load(doc);
+                        if (index > 0 && docs[index - 1].match(/^---\s*#.*$/m)) {
+                            parsed._comment = docs[index - 1].match(/^---\s*#.*$/m)[0];
+                        }
+                        json.push(parsed);
+                    }
+                });
+            }
+        } catch (err) {
+            isValid = false;
+            jsonEditor.set({});
+            if (input !== '') {
+                alert('Invalid YAML or JSON!');
+            }
+        }
+
+        if (isValid) {
+            jsonEditor.set(json);
+        }
+    });
+
+    const container = document.getElementById('jsoneditor');
+    const options = {
+        mode: 'tree',
+        modes: ['code', 'form', 'text', 'tree', 'view'],
+        onError: function (err) {
+            alert(err.toString());
+        }
+    };
+    const jsonEditor = new JSONEditor(container, options);
+
+    const resizer = document.getElementById('resizer');
+    const leftPane = document.getElementById('inputArea');
+    const rightPane = document.getElementById('jsoneditor');
+
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        document.addEventListener('mousemove', resizePanes);
+        document.addEventListener('mouseup', stopResizing);
+    });
+
+    function resizePanes(e) {
+        if (!isResizing) return;
+        const containerWidth = document.querySelector('.container').offsetWidth;
+        const newLeftWidth = (e.clientX / containerWidth) * 100;
+        const newRightWidth = 100 - newLeftWidth;
+        leftPane.style.width = `${newLeftWidth}%`;
+        rightPane.style.width = `${newRightWidth}%`;
+    }
+
+    function stopResizing() {
+        isResizing = false;
+        document.removeEventListener('mousemove', resizePanes);
+        document.removeEventListener('mouseup', stopResizing);
+    }
+
+    document.getElementById('loadFileBtn').addEventListener('click', () => {
+        document.getElementById('fileInput').click();
+    });
+
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            editor.setValue(e.target.result);
+            editor.dispatchEvent(new Event('change'));
+        };
+        reader.readAsText(file);
+    });
+
+    document.getElementById('saveFileBtn').addEventListener('click', () => {
+        const content = editor.getValue();
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = modeSelector.value === 'json' ? 'output.json' : 'output.yaml';
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
+    });
+</script>
+</body>
+</html>
