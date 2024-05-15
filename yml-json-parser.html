@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive YAML/JSON Viewer</title>
+    <link href="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+    <script src="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <style>
+        body, html { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #inputArea, #jsoneditor { width: 49%; height: 90vh; float: left; padding: 5px; }
+        #inputArea { border-right: 2px solid #ccc; }
+        textarea { width: 100%; height: 100%; resize: none; }
+        .container { display: flex; height: 100vh; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="inputArea">
+        <textarea id="yaml-json-input" placeholder="Paste your YAML or JSON here..."></textarea>
+    </div>
+    <div id="jsoneditor"></div>
+</div>
+<script>
+    const container = document.getElementById('jsoneditor');
+    const options = {
+        mode: 'tree',  // Set to 'tree' to enable tree view that can be interacted with
+        modes: ['code', 'form', 'text', 'tree', 'view'], // Allowing different modes
+        onError: function (err) {
+            alert(err.toString());
+        }
+    };
+    const editor = new JSONEditor(container, options);
+
+    document.getElementById('yaml-json-input').addEventListener('input', function () {
+        try {
+            const input = this.value.trim();
+            let json;
+
+            // Try to parse as JSON first
+            try {
+                json = JSON.parse(input);
+            } catch (jsonErr) {
+                // If JSON parsing fails, try to parse as YAML
+                json = jsyaml.load(input);
+            }
+
+            editor.set(json);
+        } catch (err) {
+            editor.set({});
+            if (this.value.trim() !== '') {  // Display an error only if there's some non-space content
+                alert('Invalid YAML or JSON!');
+            }
+        }
+    });
+</script>
+</body>
+</html>
