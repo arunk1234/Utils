@@ -67,8 +67,9 @@
                 json.push(JSON.parse(input));
             } else {
                 const docs = input.split(/^---$/m);
-                docs.forEach(doc => {
+                docs.forEach((doc, index) => {
                     const parsed = jsyaml.load(doc);
+                    parsed._documentEnd = `--- End of Document ${index + 1} ---`;
                     json.push(parsed);
                 });
             }
