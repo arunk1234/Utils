@@ -6,11 +6,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
     <link href="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
     <style>
         body, html { height: 100%; margin: 0; padding: 0; font-family: Arial, sans-serif; }
         .toolbar { padding: 5px; background-color: #f4f4f4; border-bottom: 2px solid #ccc; display: flex; justify-content: space-between; }
@@ -43,6 +38,11 @@
     <div class="resizer" id="resizer"></div>
     <div id="jsoneditor" style="width: 50%;"></div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/yaml/yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsoneditor/dist/jsoneditor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
 <script>
     const inputArea = document.getElementById('yaml-json-input');
     const modeSelector = document.getElementById('modeSelector');
@@ -59,19 +59,32 @@
 
     editor.on('change', function () {
         const input = editor.getValue().trim();
-        let json;
+        let json = [];
+        let isValid = true;
 
         try {
             if (modeSelector.value === 'json') {
-                json = JSON.parse(input);
+                json.push(JSON.parse(input));
             } else {
-                json = jsyaml.load(input);
+                const docs = input.split(/^---$/m);
+                docs.forEach(doc => {
+                    const parsed = jsyaml.load(doc);
+                    json.push(parsed);
+                });
             }
-            jsonEditor.set(json);
         } catch (err) {
+            isValid = false;
             jsonEditor.set({});
             if (input !== '') {
                 alert('Invalid YAML or JSON!');
+            }
+        }
+
+        if (isValid) {
+            if (json.length === 1) {
+                jsonEditor.set(json[0]);
+            } else {
+                jsonEditor.set(json);
             }
         }
     });
