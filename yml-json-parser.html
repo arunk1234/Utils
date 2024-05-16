@@ -32,7 +32,7 @@
     </div>
     <div>
         <select id="profileSelector">
-            <option value="">Select Profile</option>
+            <option value="all">All Profiles</option>
         </select>
     </div>
 </div>
@@ -60,6 +60,17 @@
     });
 
     let parsedDocs = [];
+    let allDocs = [];
+
+    function findProfileTag(obj, tag) {
+        if (typeof obj !== 'object' || obj === null) return null;
+        for (const key in obj) {
+            if (key === tag) return obj[key];
+            const result = findProfileTag(obj[key], tag);
+            if (result) return result;
+        }
+        return null;
+    }
 
     modeSelector.addEventListener('change', function() {
         editor.setOption('mode', this.value === 'yaml' ? 'yaml' : {name: 'javascript', json: true});
@@ -67,38 +78,44 @@
 
     profileSelector.addEventListener('change', function() {
         const selectedProfile = this.value;
-        if (selectedProfile) {
+        if (selectedProfile === "all") {
+            jsonEditor.set(allDocs);
+        } else {
             const doc = parsedDocs.find(doc => doc._profile === selectedProfile);
             if (doc) {
                 jsonEditor.set(doc);
             }
-        } else {
-            jsonEditor.set({});
         }
     });
 
     editor.on('change', function () {
         const input = editor.getValue().trim();
         parsedDocs = [];
-        profileSelector.innerHTML = '<option value="">Select Profile</option>';
+        allDocs = [];
+        profileSelector.innerHTML = '<option value="all">All Profiles</option>';
         let isValid = true;
 
         try {
             if (modeSelector.value === 'json') {
                 const parsed = JSON.parse(input);
-                if (parsed['on-profile']) {
+                const profile = findProfileTag(parsed, 'on-profile');
+                allDocs.push(parsed);
+                if (profile) {
+                    parsed._profile = profile;
                     parsedDocs.push(parsed);
-                    profileSelector.add(new Option(parsed['on-profile'], parsed['on-profile']));
+                    profileSelector.add(new Option(profile, profile));
                 }
             } else {
                 const docs = input.split(/^---/m);
                 docs.forEach(doc => {
                     if (doc.trim()) {
                         const parsed = jsyaml.load(doc);
-                        if (parsed['on-profile']) {
-                            parsed._profile = parsed['on-profile'];
+                        allDocs.push(parsed);
+                        const profile = findProfileTag(parsed, 'on-profile');
+                        if (profile) {
+                            parsed._profile = profile;
                             parsedDocs.push(parsed);
-                            profileSelector.add(new Option(parsed['on-profile'], parsed['on-profile']));
+                            profileSelector.add(new Option(profile, profile));
                         }
                     }
                 });
@@ -111,9 +128,9 @@
             }
         }
 
-        if (isValid && parsedDocs.length > 0) {
-            profileSelector.value = parsedDocs[0]._profile;
-            jsonEditor.set(parsedDocs[0]);
+        if (isValid) {
+            profileSelector.value = "all";
+            jsonEditor.set(allDocs);
         }
     });
 
