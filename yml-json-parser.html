@@ -68,7 +68,7 @@
     profileSelector.addEventListener('change', function() {
         const selectedProfile = this.value;
         if (selectedProfile) {
-            const doc = parsedDocs[selectedProfile];
+            const doc = parsedDocs.find(doc => doc._profile === selectedProfile);
             if (doc) {
                 jsonEditor.set(doc);
             }
@@ -85,15 +85,21 @@
 
         try {
             if (modeSelector.value === 'json') {
-                parsedDocs.push(JSON.parse(input));
-                profileSelector.add(new Option('Profile 1', 0));
+                const parsed = JSON.parse(input);
+                if (parsed['on-profile']) {
+                    parsedDocs.push(parsed);
+                    profileSelector.add(new Option(parsed['on-profile'], parsed['on-profile']));
+                }
             } else {
                 const docs = input.split(/^---/m);
-                docs.forEach((doc, index) => {
+                docs.forEach(doc => {
                     if (doc.trim()) {
                         const parsed = jsyaml.load(doc);
-                        parsedDocs.push(parsed);
-                        profileSelector.add(new Option(`Profile ${index + 1}`, index));
+                        if (parsed['on-profile']) {
+                            parsed._profile = parsed['on-profile'];
+                            parsedDocs.push(parsed);
+                            profileSelector.add(new Option(parsed['on-profile'], parsed['on-profile']));
+                        }
                     }
                 });
             }
@@ -106,7 +112,7 @@
         }
 
         if (isValid && parsedDocs.length > 0) {
-            profileSelector.value = 0;
+            profileSelector.value = parsedDocs[0]._profile;
             jsonEditor.set(parsedDocs[0]);
         }
     });
