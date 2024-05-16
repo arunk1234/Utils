@@ -30,6 +30,11 @@
             <option value="json">JSON</option>
         </select>
     </div>
+    <div>
+        <select id="profileSelector">
+            <option value="">Select Profile</option>
+        </select>
+    </div>
 </div>
 <div class="container">
     <div id="inputArea" style="width: 50%;">
@@ -46,6 +51,7 @@
 <script>
     const inputArea = document.getElementById('yaml-json-input');
     const modeSelector = document.getElementById('modeSelector');
+    const profileSelector = document.getElementById('profileSelector');
 
     const editor = CodeMirror.fromTextArea(inputArea, {
         mode: modeSelector.value === 'yaml' ? 'yaml' : {name: 'javascript', json: true},
@@ -53,27 +59,41 @@
         lineNumbers: true
     });
 
+    let parsedDocs = [];
+
     modeSelector.addEventListener('change', function() {
         editor.setOption('mode', this.value === 'yaml' ? 'yaml' : {name: 'javascript', json: true});
     });
 
+    profileSelector.addEventListener('change', function() {
+        const selectedProfile = this.value;
+        if (selectedProfile) {
+            const doc = parsedDocs[selectedProfile];
+            if (doc) {
+                jsonEditor.set(doc);
+            }
+        } else {
+            jsonEditor.set({});
+        }
+    });
+
     editor.on('change', function () {
         const input = editor.getValue().trim();
-        let json = [];
+        parsedDocs = [];
+        profileSelector.innerHTML = '<option value="">Select Profile</option>';
         let isValid = true;
 
         try {
             if (modeSelector.value === 'json') {
-                json.push(JSON.parse(input));
+                parsedDocs.push(JSON.parse(input));
+                profileSelector.add(new Option('Profile 1', 0));
             } else {
                 const docs = input.split(/^---/m);
                 docs.forEach((doc, index) => {
                     if (doc.trim()) {
                         const parsed = jsyaml.load(doc);
-                        if (index > 0 && docs[index - 1].match(/^---\s*#.*$/m)) {
-                            parsed._comment = docs[index - 1].match(/^---\s*#.*$/m)[0];
-                        }
-                        json.push(parsed);
+                        parsedDocs.push(parsed);
+                        profileSelector.add(new Option(`Profile ${index + 1}`, index));
                     }
                 });
             }
@@ -85,8 +105,9 @@
             }
         }
 
-        if (isValid) {
-            jsonEditor.set(json);
+        if (isValid && parsedDocs.length > 0) {
+            profileSelector.value = 0;
+            jsonEditor.set(parsedDocs[0]);
         }
     });
 
