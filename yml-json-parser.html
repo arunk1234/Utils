@@ -32,6 +32,7 @@
     </div>
     <div>
         <select id="profileSelector">
+            <option value="default">Default Profile</option>
             <option value="all">All Profiles</option>
         </select>
     </div>
@@ -60,6 +61,7 @@
     });
 
     let parsedDocs = [];
+    let defaultDocs = [];
     let allDocs = [];
 
     function findProfileTag(obj, tag) {
@@ -80,6 +82,8 @@
         const selectedProfile = this.value;
         if (selectedProfile === "all") {
             jsonEditor.set(allDocs);
+        } else if (selectedProfile === "default") {
+            jsonEditor.set(defaultDocs);
         } else {
             const doc = parsedDocs.find(doc => doc._profile === selectedProfile);
             if (doc) {
@@ -91,8 +95,9 @@
     editor.on('change', function () {
         const input = editor.getValue().trim();
         parsedDocs = [];
+        defaultDocs = [];
         allDocs = [];
-        profileSelector.innerHTML = '<option value="all">All Profiles</option>';
+        profileSelector.innerHTML = '<option value="default">Default Profile</option><option value="all">All Profiles</option>';
         let isValid = true;
 
         try {
@@ -104,6 +109,8 @@
                     parsed._profile = profile;
                     parsedDocs.push(parsed);
                     profileSelector.add(new Option(profile, profile));
+                } else {
+                    defaultDocs.push(parsed);
                 }
             } else {
                 const docs = input.split(/^---/m);
@@ -116,6 +123,8 @@
                             parsed._profile = profile;
                             parsedDocs.push(parsed);
                             profileSelector.add(new Option(profile, profile));
+                        } else {
+                            defaultDocs.push(parsed);
                         }
                     }
                 });
@@ -129,8 +138,8 @@
         }
 
         if (isValid) {
-            profileSelector.value = "all";
-            jsonEditor.set(allDocs);
+            profileSelector.value = "default";
+            jsonEditor.set(defaultDocs);
         }
     });
 
