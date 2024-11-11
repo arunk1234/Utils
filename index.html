@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mobile-Friendly Profit Calculator</title>
+    <title>Profit Calculator with Target Price</title>
     <style>
         /* General Styles */
         body {
@@ -91,14 +91,17 @@
 <body>
 
 <div class="calculator">
-    <h2>Profit Table per 0.1-Cent Increase</h2>
+    <h2>Profit Calculator with Target Price</h2>
     <label for="currentPrice">Current Price:</label>
     <input type="number" id="currentPrice" placeholder="Enter current price" step="0.01" required inputmode="decimal">
 
     <label for="amountInvested">Amount Invested:</label>
     <input type="number" id="amountInvested" placeholder="Enter amount invested" step="0.01" required inputmode="decimal">
 
-    <button onclick="generateProfitTable()">Generate Profit Table</button>
+    <label for="targetPrice">Target Price (optional):</label>
+    <input type="number" id="targetPrice" placeholder="Enter target price" step="0.01" inputmode="decimal">
+
+    <button onclick="generateProfitTable()">Calculate Profit</button>
 
     <div class="result" id="result"></div>
 </div>
@@ -107,41 +110,69 @@
     function generateProfitTable() {
         const currentPrice = parseFloat(document.getElementById("currentPrice").value);
         const amountInvested = parseFloat(document.getElementById("amountInvested").value);
+        const targetPrice = parseFloat(document.getElementById("targetPrice").value);
 
+        // Check for valid input values
         if (isNaN(currentPrice) || isNaN(amountInvested) || currentPrice <= 0 || amountInvested <= 0) {
-            document.getElementById("result").innerText = "Please enter valid positive numbers.";
+            document.getElementById("result").innerText = "Please enter valid positive numbers for current price and amount invested.";
             return;
         }
 
         const quantity = amountInvested / currentPrice;
-        let tableHTML = `
-            <table>
-                <tr>
-                    <th>Price Increase (0.1 cents)</th>
-                    <th>New Price</th>
-                    <th>Profit</th>
-                </tr>
-        `;
 
-        for (let i = 1; i <= 20; i++) {
-            const increaseInDollars = i * 0.001; // 0.1 cent is $0.001
-            const newPrice = currentPrice + increaseInDollars;
-            const profit = quantity * increaseInDollars;
-            
-            // Apply "highlight" class every 5th row
-            const rowClass = (i % 5 === 0) ? "highlight" : "";
-            
-            tableHTML += `
-                <tr class="${rowClass}">
-                    <td>${(i * 0.1).toFixed(1)} cent(s)</td>
-                    <td>$${newPrice.toFixed(4)}</td>
-                    <td>$${profit.toFixed(4)}</td>
-                </tr>
-            `;
+        // Helper function to format dollar amounts with commas
+        function formatDollar(amount) {
+            return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
-        tableHTML += "</table>";
-        document.getElementById("result").innerHTML = tableHTML;
+        // If a target price is provided, calculate and display only the profit/loss for the target price
+        if (!isNaN(targetPrice) && targetPrice > 0) {
+            const profitOrLoss = quantity * (targetPrice - currentPrice);
+            let resultHTML = `
+                <table>
+                    <tr>
+                        <th>Target Price</th>
+                        <th>Profit/Loss</th>
+                    </tr>
+                    <tr style="background-color: #c8e6c9; font-weight: bold;">
+                        <td>$${formatDollar(targetPrice)}</td>
+                        <td>${profitOrLoss >= 0 ? '$' : '-$'}${formatDollar(Math.abs(profitOrLoss))}</td>
+                    </tr>
+                </table>
+            `;
+            document.getElementById("result").innerHTML = resultHTML;
+        } 
+        // If no target price is provided, show the incremental profit table
+        else {
+            let tableHTML = `
+                <table>
+                    <tr>
+                        <th>Price Increase (0.1 cents)</th>
+                        <th>New Price</th>
+                        <th>Profit</th>
+                    </tr>
+            `;
+
+            for (let i = 1; i <= 20; i++) {
+                const increaseInDollars = i * 0.001; // 0.1 cent is $0.001
+                const newPrice = currentPrice + increaseInDollars;
+                const profit = quantity * increaseInDollars;
+
+                // Apply "highlight" class every 5th row
+                const rowClass = (i % 5 === 0) ? "highlight" : "";
+
+                tableHTML += `
+                    <tr class="${rowClass}">
+                        <td>${(i * 0.1).toFixed(1)} cent(s)</td>
+                        <td>$${formatDollar(newPrice)}</td>
+                        <td>$${formatDollar(profit)}</td>
+                    </tr>
+                `;
+            }
+
+            tableHTML += "</table>";
+            document.getElementById("result").innerHTML = tableHTML;
+        }
     }
 </script>
 
